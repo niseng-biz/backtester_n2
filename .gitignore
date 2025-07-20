@@ -171,3 +171,6 @@ Thumbs.db
 *.tmp
 *.temp
 *.bak
+
+# kiro folder
+.kiro
