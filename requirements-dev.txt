@@ -1,0 +1,24 @@
+# Include all production requirements
+-r requirements.txt
+
+# Development and testing tools
+pytest>=6.2.0,<8.0.0
+pytest-cov>=2.12.0,<5.0.0
+pytest-mock>=3.6.0,<4.0.0
+
+# Code formatting and linting
+black>=21.0.0,<25.0.0
+flake8>=3.9.0,<7.0.0
+isort>=5.9.0,<6.0.0
+mypy>=0.910,<2.0.0
+
+# Pre-commit hooks
+pre-commit>=2.13.0,<4.0.0
+
+# Optional development tools
+jupyter>=1.0.0,<2.0.0
+ipykernel>=6.0.0,<7.0.0
+
+# Performance profiling (optional)
+memory-profiler>=0.58.0,<1.0.0
+line-profiler>=3.3.0,<5.0.0
