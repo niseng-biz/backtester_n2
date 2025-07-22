@@ -2,16 +2,17 @@
 Main backtester engine that coordinates all components.
 """
 
-from typing import List, Dict, Any, Optional, Callable
-from datetime import datetime
-import time
 import logging
-from .models import MarketData, BacktestResult
-from .data_reader import DataReader
-from .strategy import Strategy
-from .portfolio import PortfolioManager
+import time
+from datetime import datetime
+from typing import Any, Callable, Dict, List, Optional
+
 from .analytics import AnalyticsEngine
+from .data_reader import DataReader
+from .models import BacktestResult, MarketData
+from .portfolio import PortfolioManager
 from .result_manager import ResultManager
+from .strategy import Strategy
 
 # Configure logging
 logging.basicConfig(
@@ -22,7 +23,9 @@ logging.basicConfig(
 
 
 class Backtester:
-    """Main backtesting engine that coordinates data, strategy, and portfolio management."""
+    """
+    Main backtesting engine that coordinates data, strategy, and portfolio management.
+    """
 
     def __init__(self, initial_capital: float = 100000.0):
         """

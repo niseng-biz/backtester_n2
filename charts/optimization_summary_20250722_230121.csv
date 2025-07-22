@@ -1,0 +1,3 @@
+Strategy,Best Value,Trials,Val Sharpe,Test Sharpe,Test Return,Best Params
+MovingAverage,1.2575345686743458,50,-0.23694457953456444,1.2893503202885153,1.5164730856500013,"{'short_window': 10, 'long_window': 43, 'position_lots': 1.0441036598499225}"
+RSI,0.606706642437093,50,-0.09289902191161736,1.1124763128735329,1.0880136311100004,"{'rsi_period': 21, 'oversold_threshold': 38.91244538269786, 'overbought_threshold': 73.73827176676511}"

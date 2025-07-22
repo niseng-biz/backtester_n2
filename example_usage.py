@@ -7,10 +7,10 @@
 
 import os
 from datetime import datetime
-from backtester.crypto_data_reader import CryptoDataReader
-from backtester.strategy import BuyAndHoldStrategy, MovingAverageStrategy, RSIAveragingStrategy
-from backtester.backtester import Backtester
-from backtester.visualization import VisualizationEngine
+
+from backtester import (Backtester, BuyAndHoldStrategy, ConfigFactory,
+                        CryptoDataReader, LotSizeMode, MovingAverageStrategy,
+                        RSIAveragingStrategy, VisualizationEngine)
 
 
 def print_separator(title: str):
@@ -67,12 +67,7 @@ def run_buy_and_hold_example():
     backtester = Backtester(initial_capital=1000000)  # 100万円
     
     # LOT設定を作成（可変モード - デフォルト）
-    from backtester.models import LotConfig, LotSizeMode
-    crypto_config = LotConfig(
-        asset_type="crypto",
-        min_lot_size=0.01,
-        lot_step=0.01,
-        lot_size_mode=LotSizeMode.VARIABLE,  # 可変LOTモード（デフォルト）
+    crypto_config = ConfigFactory.create_crypto_lot_config(
         capital_percentage=0.95,  # 現在の総資金の95%を使用（複利効果）
         max_lot_size=10.0
     )
@@ -118,12 +113,7 @@ def run_moving_average_example():
     backtester = Backtester(initial_capital=1000000)  # 100万円
     
     # LOT設定を作成（可変モード - デフォルト）
-    from backtester.models import LotConfig, LotSizeMode
-    crypto_config = LotConfig(
-        asset_type="crypto",
-        min_lot_size=0.01,
-        lot_step=0.01,
-        lot_size_mode=LotSizeMode.VARIABLE,  # 可変LOTモード（デフォルト）
+    crypto_config = ConfigFactory.create_crypto_lot_config(
         capital_percentage=0.8,  # 現在の総資金の80%を使用（複利効果）
         max_lot_size=10.0
     )
@@ -168,12 +158,7 @@ def run_rsi_averaging_example():
     backtester = Backtester(initial_capital=1000000)  # 100万円
     
     # LOT設定を作成（可変モード - デフォルト）
-    from backtester.models import LotConfig, LotSizeMode
-    crypto_config = LotConfig(
-        asset_type="crypto",
-        min_lot_size=0.01,
-        lot_step=0.01,
-        lot_size_mode=LotSizeMode.VARIABLE,  # 可変LOTモード（デフォルト）
+    crypto_config = ConfigFactory.create_crypto_lot_config(
         capital_percentage=0.15,  # 各ポジション15%の資金を使用
         max_lot_size=5.0
     )
@@ -236,23 +221,16 @@ def compare_strategies_example():
     backtester = Backtester(initial_capital=1000000)
     
     # LOT設定を作成（可変モード - デフォルト）
-    from backtester.models import LotConfig, LotSizeMode
-    
+
     # 可変LOT設定
-    variable_config = LotConfig(
-        asset_type="crypto",
-        min_lot_size=0.01,
-        lot_step=0.01,
+    variable_config = ConfigFactory.create_crypto_lot_config(
         lot_size_mode=LotSizeMode.VARIABLE,
         capital_percentage=0.8,  # 80%の資金を使用
         max_lot_size=10.0
     )
     
     # 固定LOT設定
-    fixed_config = LotConfig(
-        asset_type="crypto",
-        min_lot_size=0.01,
-        lot_step=0.01,
+    fixed_config = ConfigFactory.create_crypto_lot_config(
         lot_size_mode=LotSizeMode.FIXED
     )
     

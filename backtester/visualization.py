@@ -2,16 +2,17 @@
 Visualization engine for backtesting results with matplotlib integration.
 """
 
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import numpy as np
-from typing import List, Dict, Any, Optional, Tuple
-from datetime import datetime
 import os
-import japanize_matplotlib
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple
 
-from .models import Trade, MarketData, OrderAction
+import japanize_matplotlib
+import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
+import numpy as np
+
 from .backtester import Backtester
+from .models import MarketData, OrderAction, Trade
 
 
 class VisualizationEngine:
@@ -85,7 +86,11 @@ class VisualizationEngine:
 
         # Plot price line
         ax.plot(
-            dates, prices, color=self.colors["price_line"], linewidth=1.5, label="Price"
+            dates,
+            prices,
+            color=self.colors["price_line"],
+            linewidth=1.5,
+            label="Price"
         )
 
         # Separate entry and exit signals with proper colors
@@ -110,7 +115,9 @@ class VisualizationEngine:
                 sell_entries.append((trade.entry_time, trade.entry_price))
                 # Exit signals for sell trades (up triangles)
                 if trade.is_profitable:
-                    sell_exits_profit.append((trade.exit_time, trade.exit_price))
+                    sell_exits_profit.append(
+                        (trade.exit_time, trade.exit_price)
+                    )
                 else:
                     sell_exits_loss.append((trade.exit_time, trade.exit_price))
 
@@ -544,6 +551,19 @@ class VisualizationEngine:
                 alpha=0.8,
                 zorder=5,
             )
+
+        # Plot connection lines between entry and exit points (gray dotted lines)
+        for trade in trades:
+            if trade.exit_time:  # Only draw line if trade has exit
+                ax1.plot(
+                    [trade.entry_time, trade.exit_time],
+                    [trade.entry_price, trade.exit_price],
+                    color=self.colors["connection_line"],
+                    linestyle="--",
+                    alpha=0.5,
+                    linewidth=1,
+                    zorder=3,
+                )
 
         ax1.set_title(f"{strategy_name} - Price & Signals", fontweight="bold")
         ax1.set_ylabel("Price")

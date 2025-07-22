@@ -2,9 +2,10 @@
 Portfolio management system for tracking positions, cash, and performance.
 """
 
-from typing import Dict, List, Optional, Any
 from datetime import datetime
-from .models import Order, Trade, MarketData, OrderAction
+from typing import Any, Dict, List, Optional
+
+from .models import MarketData, Order, OrderAction, Trade
 from .order_manager import OrderManager
 
 
@@ -23,7 +24,8 @@ class Position:
 
         Args:
             symbol: Security symbol
-            position_id: Unique identifier for this position (for multiple position support)
+            position_id: Unique identifier for this position 
+                (for multiple position support)
             quantity: Number of units (positive = long, negative = short, supports fractional)
             avg_price: Average cost basis per unit
         """

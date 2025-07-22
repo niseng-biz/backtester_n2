@@ -3,19 +3,19 @@ Base strategy framework for implementing trading strategies.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
+from .config import ConfigFactory
+from .models import LotConfig, MarketData, Order, OrderAction, OrderType
+
 try:
     import talib
-
     TALIB_AVAILABLE = True
 except ImportError:
     TALIB_AVAILABLE = False
     print("⚠️ Warning: TA-Lib not available. Using fallback RSI calculation.")
-
-from .models import MarketData, Order, OrderType, OrderAction, LotConfig
 
 
 class Strategy(ABC):
@@ -37,7 +37,8 @@ class Strategy(ABC):
         """
         self.initial_capital = initial_capital
         self.name = name
-        self.current_position = 0.0  # Current position size (supports fractional)
+        # Current position size (supports fractional)
+        self.current_position = 0.0
         self.cash = initial_capital
         self.total_value = initial_capital
         self.trade_history = []
@@ -60,7 +61,8 @@ class Strategy(ABC):
 
         Args:
             current_data: Current market data point
-            historical_data: List of historical market data (chronologically ordered)
+            historical_data: List of historical market data 
+                (chronologically ordered)
 
         Returns:
             Order object if signal is generated, None otherwise
@@ -157,11 +159,15 @@ class Strategy(ABC):
         }
 
     def calculate_lot_size(
-        self, available_cash: float, current_price: float, target_lots: float = 1.0
+        self,
+        available_cash: float,
+        current_price: float,
+        target_lots: float = 1.0
     ) -> float:
         """
         Calculate actual lot size based on available cash and target lots.
-        Uses LotConfig's calculate_lot_size method which supports both FIXED and VARIABLE modes.
+        Uses LotConfig's calculate_lot_size method which supports both 
+        FIXED and VARIABLE modes.
 
         Args:
             available_cash: Available cash for the trade
@@ -226,6 +232,52 @@ class Strategy(ABC):
         self.total_trades = 0
         self.winning_trades = 0
         self.losing_trades = 0
+
+    @classmethod
+    def get_parameter_space(cls) -> Dict[str, tuple]:
+        """
+        Return parameter space for optimization.
+        Base implementation returns empty space.
+        
+        Returns:
+            Dictionary mapping parameter names to (type, min, max) tuples
+        """
+        return {}
+    
+    @classmethod
+    def get_default_parameters(cls) -> Dict[str, Any]:
+        """
+        Return default parameters for the strategy.
+        Base implementation returns empty parameters.
+        
+        Returns:
+            Dictionary with default parameter values
+        """
+        return {}
+    
+    @classmethod
+    def create_from_params(cls, initial_capital: float = 100000.0, **params):
+        """
+        Create strategy instance from parameter dictionary.
+        Base implementation creates instance with default LOT config.
+        
+        Args:
+            initial_capital: Initial capital for the strategy
+            **params: Strategy parameters
+            
+        Returns:
+            Strategy instance
+        """
+        # Extract lot_config if provided, otherwise use default crypto config
+        lot_config = params.pop('lot_config', None)
+        if lot_config is None:
+            lot_config = ConfigFactory.create_crypto_lot_config()
+        
+        return cls(
+            initial_capital=initial_capital, 
+            lot_config=lot_config, 
+            **params
+        )
 
 
 class BuyAndHoldStrategy(Strategy):
@@ -417,6 +469,24 @@ class MovingAverageStrategy(Strategy):
         super().reset()
         self.last_signal = None
 
+    @classmethod
+    def get_parameter_space(cls) -> Dict[str, tuple]:
+        """Return parameter space for optimization."""
+        return {
+            'short_window': ('int', 5, 50),
+            'long_window': ('int', 20, 200),
+            'position_lots': ('float', 0.1, 2.0)
+        }
+    
+    @classmethod
+    def get_default_parameters(cls) -> Dict[str, Any]:
+        """Return default parameters for the strategy."""
+        return {
+            'short_window': 10,
+            'long_window': 30,
+            'position_lots': 1.0
+        }
+
 
 class RSIStrategy(Strategy):
     """RSI-based trading strategy."""
@@ -427,6 +497,7 @@ class RSIStrategy(Strategy):
         oversold_threshold: float = 30.0,
         overbought_threshold: float = 70.0,
         initial_capital: float = 100000.0,
+        lot_config: Optional[LotConfig] = None,
     ):
         """
         Initialize RSI strategy.
@@ -436,8 +507,9 @@ class RSIStrategy(Strategy):
             oversold_threshold: RSI level considered oversold (buy signal)
             overbought_threshold: RSI level considered overbought (sell signal)
             initial_capital: Starting capital
+            lot_config: LOT configuration for position sizing
         """
-        super().__init__(initial_capital, "RSI")
+        super().__init__(initial_capital, "RSI", lot_config)
         self.rsi_period = rsi_period
         self.oversold_threshold = oversold_threshold
         self.overbought_threshold = overbought_threshold
@@ -485,22 +557,28 @@ class RSIStrategy(Strategy):
             self.last_signal = current_signal
 
             if current_signal == OrderAction.BUY and self.cash > 0:
-                max_shares = int(self.cash / current_data.close)
-                if max_shares > 0:
-                    return Order(
-                        order_type=OrderType.MARKET,
+                # Calculate lot size based on available cash
+                actual_lots = self.calculate_lot_size(
+                    self.cash, current_data.close, 1.0  # Use 1 lot as default
+                )
+
+                if actual_lots > 0:
+                    return self.create_lot_order(
                         action=OrderAction.BUY,
-                        quantity=max_shares,
-                        timestamp=current_data.timestamp,
+                        lots=actual_lots,
+                        current_price=current_data.close,
                     )
 
             elif current_signal == OrderAction.SELL and self.current_position > 0:
-                return Order(
-                    order_type=OrderType.MARKET,
-                    action=OrderAction.SELL,
-                    quantity=self.current_position,
-                    timestamp=current_data.timestamp,
-                )
+                # Convert current position to lots for selling
+                current_lots = self.lot_config.units_to_lots(self.current_position)
+
+                if current_lots > 0:
+                    return self.create_lot_order(
+                        action=OrderAction.SELL,
+                        lots=current_lots,
+                        current_price=current_data.close,
+                    )
 
         return None
 
@@ -578,6 +656,36 @@ class RSIStrategy(Strategy):
         """Reset strategy state."""
         super().reset()
         self.last_signal = None
+
+    @classmethod
+    def get_parameter_space(cls) -> Dict[str, tuple]:
+        """
+        Return parameter space for optimization.
+        
+        Returns:
+            Dictionary mapping parameter names to (type, min, max) tuples
+        """
+        return {
+            'rsi_period': ('int', 5, 30),
+            'oversold_threshold': ('float', 20, 40),
+            'overbought_threshold': ('float', 60, 80)
+        }
+    
+    @classmethod
+    def get_default_parameters(cls) -> Dict[str, Any]:
+        """
+        Return default parameters for the strategy.
+        
+        Returns:
+            Dictionary with default parameter values
+        """
+        return {
+            'rsi_period': 14,
+            'oversold_threshold': 30.0,
+            'overbought_threshold': 70.0
+        }
+    
+
 
 
 class RSIAveragingStrategy(Strategy):
