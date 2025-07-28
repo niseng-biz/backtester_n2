@@ -137,6 +137,7 @@ tests_debug/
 charts/*.png
 charts/*.jpg
 charts/*.pdf
+charts/*.csv
 !charts/README.md
 
 # Backtest results
@@ -146,6 +147,13 @@ trade_history_*.csv
 # Logs
 *.log
 backtester.log
+data/*.log
+
+# Database files (keep structure, ignore data)
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+!data/.gitkeep
 
 # Example data files (keep sample data)
 pricedata/*.csv
@@ -175,3 +183,6 @@ Thumbs.db
 # kiro folder
 .kiro
 .kiro/
+
+sample_src/
+sample_src

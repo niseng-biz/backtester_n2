@@ -6,10 +6,14 @@ trading strategy parameters using Optuna with proper data splitting.
 """
 
 import os
+import sys
 from datetime import datetime
 
 import matplotlib.pyplot as plt
 import pandas as pd
+
+# Add the parent directory to the Python path to import backtester
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from backtester.crypto_data_reader import CryptoDataReader
 from backtester.optimizer import Optimizer
@@ -80,13 +84,34 @@ def main():
         print(f"Default parameters: {default_params}")
         
         try:
-            # Run optimization with fixed seed for reproducibility
+            # Prepare initial suggestions based on strategy type
+            initial_suggestions = []
+            if strategy_name == 'MovingAverage':
+                # Add some well-known MA combinations
+                initial_suggestions = [
+                    {'short_window': 50, 'long_window': 200, 'position_lots': 1.0},  # Golden cross
+                    {'short_window': 5, 'long_window': 20, 'position_lots': 0.5},    # Short-term
+                    {'short_window': 10, 'long_window': 30, 'position_lots': 1.0},   # Default-like
+                ]
+            elif strategy_name == 'RSI':
+                # Add some common RSI configurations
+                initial_suggestions = [
+                    {'rsi_period': 14, 'oversold_threshold': 30, 'overbought_threshold': 70},  # Classic
+                    {'rsi_period': 21, 'oversold_threshold': 25, 'overbought_threshold': 75},  # Conservative
+                    {'rsi_period': 7, 'oversold_threshold': 35, 'overbought_threshold': 65},   # Aggressive
+                ]
+            
+            print(f"Using {len(initial_suggestions)} initial suggestions")
+            
+            # Run optimization with suggestions and fixed seed for reproducibility
             result = optimizer.optimize_strategy(
                 strategy_class=strategy_class,
                 parameter_space=parameter_space,
                 n_trials=50,  # Reduced for faster example
                 optimization_metric='sharpe_ratio',
-                random_state=42  # Fixed seed for reproducible results
+                random_state=42,  # Fixed seed for reproducible results
+                initial_suggestions=initial_suggestions,
+                use_default_suggestions=True  # Also include strategy defaults
             )
             
             optimization_results[strategy_name] = result

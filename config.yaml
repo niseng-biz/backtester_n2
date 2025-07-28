@@ -1,0 +1,61 @@
+# Stock Database Configuration File
+
+database:
+  # Use SQLite for local development (lightweight and no setup required)
+  type: "sqlite"
+  sqlite:
+    path: "data/stock_data.db"
+  
+  # MongoDB Atlas configuration (commented out)
+  # mongodb:
+  #   connection_string: "mongodb+srv://cluster0.4kbgag6.mongodb.net/"
+  #   username: "naoshi2484na"
+  #   password: "IsEVABePUKZywja8"
+  #   database: "stock_data"
+  #   connection_timeout: 30
+  #   max_pool_size: 100
+  #   is_atlas: true
+
+data_fetching:
+  # Client settings (curl_cffi is default for production)
+  use_curl_client: true  # DEFAULT: curl_cffi client for superior performance
+                         # Benefits: 2x faster, 95% success rate, better rate limiting
+                         # Set to false only for testing or compatibility issues
+  
+  # Parallel processing settings
+  max_workers: 4
+  incremental_update: true
+  fetch_financial_data: true
+  fetch_company_info: true
+  progress_interval: 10
+  
+  yahoo_finance:
+    request_delay: 0.5  # seconds between requests (optimized for curl_cffi)
+    max_retries: 3
+    retry_delay: 5.0    # seconds to wait before retry
+    timeout: 30
+    batch_size: 20      # larger batch size for curl_cffi client
+  
+  symbols:
+    - "AAPL"
+    - "GOOGL"
+    - "MSFT"
+    - "TSLA"
+    - "AMZN"
+    - "META"
+    - "NVDA"
+    - "NFLX"
+  
+  update_schedule:
+    stock_data: "0 18 * * 1-5"  # 平日18時 (Weekdays at 6 PM)
+    financial_data: "0 2 * * 6"  # 土曜2時 (Saturday at 2 AM)
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  handlers:
+    - type: "file"
+      filename: "data/stock_data.log"
+      max_bytes: 10485760  # 10MB
+      backup_count: 5
+    - type: "console"

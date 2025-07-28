@@ -2,7 +2,7 @@
 Setup script for the Stock Trading Backtester package.
 """
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
@@ -65,10 +65,26 @@ setup(
             "memory-profiler>=0.58.0,<1.0.0",
             "line-profiler>=3.3.0,<5.0.0",
         ],
+        "stock-data": [
+            "requests>=2.25.0",
+            "beautifulsoup4>=4.9.0",
+            "lxml>=4.6.0",
+            "streamlit>=1.20.0",
+            "python-dotenv>=0.19.0",
+        ],
+        "minimal": [
+            # Minimal installation without TA-Lib
+            "pandas>=1.3.0,<3.0.0",
+            "numpy>=1.21.0,<2.0.0",
+            "matplotlib>=3.4.0,<4.0.0",
+            "japanize-matplotlib>=1.1.0",
+            "scipy>=1.7.0,<2.0.0",
+            "seaborn>=0.11.0,<1.0.0",
+        ],
     },
     entry_points={
         "console_scripts": [
-            "backtester-demo=example_usage:main",
+            "backtester-demo=examples.example_usage:main",
         ],
     },
     include_package_data=True,

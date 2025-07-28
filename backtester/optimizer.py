@@ -271,7 +271,9 @@ class Optimizer:
         n_trials: int = 100,
         optimization_metric: str = 'sharpe_ratio',
         study_name: Optional[str] = None,
-        random_state: Optional[int] = None
+        random_state: Optional[int] = None,
+        initial_suggestions: Optional[List[Dict[str, Any]]] = None,
+        use_default_suggestions: bool = True
     ) -> OptimizationResult:
         """
         Optimize strategy parameters using Optuna.
@@ -283,6 +285,8 @@ class Optimizer:
             optimization_metric: Metric to optimize (default: 'sharpe_ratio')
             study_name: Optional name for the Optuna study
             random_state: Random seed for reproducibility
+            initial_suggestions: List of parameter dictionaries to try first
+            use_default_suggestions: Whether to include strategy default parameters as suggestions
             
         Returns:
             OptimizationResult containing optimization results
@@ -302,6 +306,18 @@ class Optimizer:
             study_name=study_name,
             sampler=optuna.samplers.TPESampler(seed=random_state) if random_state else None
         )
+        
+        # Add initial suggestions
+        suggestions = self._prepare_initial_suggestions(
+            strategy_class, parameter_space, initial_suggestions, use_default_suggestions
+        )
+        
+        for suggestion in suggestions:
+            try:
+                study.enqueue_trial(suggestion)
+                logger.info(f"Enqueued suggestion: {suggestion}")
+            except Exception as e:
+                logger.warning(f"Failed to enqueue suggestion {suggestion}: {e}")
         
         # Define objective function
         def objective(trial: optuna.Trial) -> float:
@@ -344,6 +360,146 @@ class Optimizer:
             optimization_history=optimization_history
         )
     
+    def _prepare_initial_suggestions(
+        self,
+        strategy_class: Type[Strategy],
+        parameter_space: Dict[str, Tuple],
+        initial_suggestions: Optional[List[Dict[str, Any]]] = None,
+        use_default_suggestions: bool = True
+    ) -> List[Dict[str, Any]]:
+        """
+        Prepare initial parameter suggestions for Optuna optimization.
+        
+        Args:
+            strategy_class: Strategy class to optimize
+            parameter_space: Parameter search space
+            initial_suggestions: User-provided initial suggestions
+            use_default_suggestions: Whether to include strategy default parameters
+            
+        Returns:
+            List of parameter dictionaries to suggest to Optuna
+        """
+        suggestions = []
+        
+        # Add user-provided suggestions
+        if initial_suggestions:
+            for suggestion in initial_suggestions:
+                # Validate suggestion parameters against parameter space
+                validated_suggestion = self._validate_suggestion(suggestion, parameter_space)
+                if validated_suggestion:
+                    suggestions.append(validated_suggestion)
+                    logger.info(f"Added user suggestion: {validated_suggestion}")
+        
+        # Add strategy default parameters if available and requested
+        if use_default_suggestions and hasattr(strategy_class, 'get_default_parameters'):
+            try:
+                default_params = strategy_class.get_default_parameters()
+                validated_defaults = self._validate_suggestion(default_params, parameter_space)
+                if validated_defaults:
+                    suggestions.append(validated_defaults)
+                    logger.info(f"Added default parameters: {validated_defaults}")
+            except Exception as e:
+                logger.warning(f"Could not get default parameters for {strategy_class.__name__}: {e}")
+        
+        # Add some common good starting points based on parameter space
+        common_suggestions = self._generate_common_suggestions(parameter_space)
+        suggestions.extend(common_suggestions)
+        
+        return suggestions
+    
+    def _validate_suggestion(
+        self,
+        suggestion: Dict[str, Any],
+        parameter_space: Dict[str, Tuple]
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Validate and adjust a parameter suggestion against the parameter space.
+        
+        Args:
+            suggestion: Parameter suggestion to validate
+            parameter_space: Valid parameter space
+            
+        Returns:
+            Validated suggestion or None if invalid
+        """
+        validated = {}
+        
+        for param_name, param_config in parameter_space.items():
+            if param_name not in suggestion:
+                continue
+                
+            param_type, min_val, max_val = param_config
+            suggested_value = suggestion[param_name]
+            
+            try:
+                if param_type == 'int':
+                    value = int(suggested_value)
+                    validated[param_name] = max(min_val, min(max_val, value))
+                elif param_type == 'float':
+                    value = float(suggested_value)
+                    validated[param_name] = max(min_val, min(max_val, value))
+                elif param_type == 'categorical':
+                    if suggested_value in min_val:  # min_val contains choices for categorical
+                        validated[param_name] = suggested_value
+                else:
+                    logger.warning(f"Unknown parameter type {param_type} for {param_name}")
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Invalid value for parameter {param_name}: {suggested_value}, error: {e}")
+        
+        return validated if validated else None
+    
+    def _generate_common_suggestions(
+        self,
+        parameter_space: Dict[str, Tuple]
+    ) -> List[Dict[str, Any]]:
+        """
+        Generate common good starting points based on parameter space.
+        
+        Args:
+            parameter_space: Parameter search space
+            
+        Returns:
+            List of common parameter suggestions
+        """
+        suggestions = []
+        
+        # Generate a few strategic starting points
+        for strategy in ['conservative', 'moderate', 'aggressive']:
+            suggestion = {}
+            
+            for param_name, param_config in parameter_space.items():
+                param_type, min_val, max_val = param_config
+                
+                if param_type == 'int':
+                    if strategy == 'conservative':
+                        # Use values closer to minimum
+                        suggestion[param_name] = min_val + int((max_val - min_val) * 0.25)
+                    elif strategy == 'moderate':
+                        # Use middle values
+                        suggestion[param_name] = min_val + int((max_val - min_val) * 0.5)
+                    else:  # aggressive
+                        # Use values closer to maximum
+                        suggestion[param_name] = min_val + int((max_val - min_val) * 0.75)
+                        
+                elif param_type == 'float':
+                    if strategy == 'conservative':
+                        suggestion[param_name] = min_val + (max_val - min_val) * 0.25
+                    elif strategy == 'moderate':
+                        suggestion[param_name] = min_val + (max_val - min_val) * 0.5
+                    else:  # aggressive
+                        suggestion[param_name] = min_val + (max_val - min_val) * 0.75
+                        
+                elif param_type == 'categorical':
+                    # For categorical, just pick the first option for simplicity
+                    if min_val:  # min_val contains choices
+                        suggestion[param_name] = min_val[0]
+            
+            if suggestion:
+                suggestions.append(suggestion)
+                logger.info(f"Generated {strategy} suggestion: {suggestion}")
+        
+        return suggestions
+
     def _objective_function(
         self,
         trial: optuna.Trial,

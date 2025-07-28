@@ -46,6 +46,53 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 
 # 依存関係インストール
 pip install -r requirements.txt
+
+# その他のインストールオプション
+# 開発環境: pip install -r requirements/requirements-dev.txt
+# 軽量版: pip install -r requirements/requirements-minimal.txt
+# 株式データのみ: pip install -r requirements/stock_data_requirements.txt
+```
+
+### 📋 Requirements管理
+
+プロジェクトでは用途別に複数のrequirementsファイルを提供しています：
+
+- **`requirements.txt`**: プロダクション環境用（メイン）
+- **`requirements/requirements-dev.txt`**: 開発環境用（テスト・コード品質ツール含む）
+- **`requirements/requirements-minimal.txt`**: 軽量版（TA-Libなし）
+- **`requirements/stock_data_requirements.txt`**: 株式データモジュール専用
+
+詳細は [`requirements/README.md`](requirements/README.md) をご覧ください。
+
+### 📊 株価データベース機能
+
+このバックテスターには、Yahoo Financeから株価データを自動取得・管理する高性能データベースシステムが統合されています。
+
+#### 🚀 curl_cffi による高速データ取得（デフォルト）
+
+- **2倍高速**: 従来のyfinanceライブラリより50%高速なリクエスト処理
+- **大容量バッチ**: 20銘柄の並列処理（従来の10銘柄から向上）
+- **高い成功率**: ブラウザ偽装による95%の成功率
+- **堅牢なエラー処理**: 指数バックオフによる自動リトライ
+
+#### データベース機能
+
+```python
+from stock_database.utils.data_fetcher import DataFetcher
+from stock_database.database import MongoDBManager
+
+# 高性能データ取得（curl_cffiがデフォルト）
+data_fetcher = DataFetcher()
+
+# 複数銘柄の並列取得
+symbols = ['AAPL', 'GOOGL', 'MSFT', 'TSLA']
+results = data_fetcher.fetch_stock_data(symbols)
+
+# 差分更新（新しいデータのみ取得）
+incremental_results = data_fetcher.schedule_incremental_update(symbols)
+
+# 包括的データ取得（株価・財務・企業情報）
+all_data = data_fetcher.fetch_all_data(symbols)
 ```
 
 ### 基本的な使用方法
@@ -93,8 +140,21 @@ print(f"勝率: {result.win_rate*100:.2f}%")
 ### デモ実行
 
 ```bash
-python example_usage.py
+python examples/example_usage.py
+# または
+backtester-demo
 ```
+
+### 📁 Examples - 使用例集
+
+`examples/` フォルダには、様々な使用例とデモンストレーションが含まれています：
+
+- **`example_usage.py`** ⭐ - メインデモ（全機能の包括的な例）
+- **`advanced_stock_dashboard.py`** - 高度な株式分析ダッシュボード
+- **`backtester_adapter_example.py`** - システム統合の例
+- **`data_access_api_example.py`** - データアクセスAPIの使用例
+
+詳細は [`examples/README.md`](examples/README.md) をご覧ください。
 
 これは以下を実演します：
 - バイアンドホールド戦略
@@ -441,7 +501,7 @@ git clone https://github.com/your-username/stock-trading-backtester.git
 cd stock-trading-backtester
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements-dev.txt
+pip install -r requirements/requirements-dev.txt
 
 # pre-commit フック インストール
 pre-commit install

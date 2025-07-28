@@ -1,12 +1,46 @@
 """
-株価取引ストラテジーバックテスター使用例
+株価取引ストラテジーバックテスター - メインデモンストレーション
 
-このスクリプトは、実際のBTC/JPY価格データを使用して
-バックテスターの機能をデモンストレーションします。
+🎯 目的:
+バックテスターの全機能を包括的にデモンストレーションし、
+初心者から中級者まで理解できる実用的な使用例を提供します。
+
+📊 実装機能:
+- バイアンドホールド戦略の実行
+- 移動平均クロスオーバー戦略
+- RSIナンピン戦略
+- 複数戦略の比較分析
+- パフォーマンス指標の計算
+- 結果のエクスポート（JSON/CSV）
+- プロフェッショナルな可視化
+
+🚀 実行方法:
+    python examples/example_usage.py
+    # または
+    backtester-demo
+
+📈 使用データ:
+実際のBTC/JPY価格データ（BitFlyer）を使用して、
+リアルな市場環境でのバックテストを実行します。
+
+👥 対象者:
+- バックテスター初心者
+- 戦略開発を学びたい方
+- 全機能を理解したい方
+- 実用的な例を求める方
+
+⚠️ 注意事項:
+- pricedata/BITFLYER_BTCJPY_1D_c51ab.csv が必要
+- 実行には数分かかる場合があります
+- charts/ フォルダに結果が保存されます
 """
 
 import os
+import sys
 from datetime import datetime
+
+# Add the parent directory to the Python path to import backtester
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from backtester import (Backtester, BuyAndHoldStrategy, ConfigFactory,
                         CryptoDataReader, LotSizeMode, MovingAverageStrategy,

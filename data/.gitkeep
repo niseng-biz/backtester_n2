@@ -1,0 +1,2 @@
+# This file ensures the data/ directory is tracked by git
+# Database files and logs are stored here but ignored by .gitignore
