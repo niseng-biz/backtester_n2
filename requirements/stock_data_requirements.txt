@@ -8,8 +8,7 @@ numpy>=1.21.0,<2.0.0
 # Configuration management
 PyYAML>=6.0.0
 
-# Database support
-pymongo>=4.0.0,<5.0.0  # MongoDB support (optional)
+# Database support (SQLite is built-in to Python)
 
 # Yahoo Finance data fetching
 yfinance>=0.2.0

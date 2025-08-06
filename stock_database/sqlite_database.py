@@ -8,13 +8,43 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from .config import get_config_manager
+from .config import get_config_manager, with_config
 from .models.company_info import CompanyInfo
 from .models.financial_data import FinancialData
 from .models.stock_data import StockData
 from .models.symbol_info import SymbolInfo
 
 logger = logging.getLogger(__name__)
+
+
+class DatabaseError(Exception):
+    """Custom exception for database operation errors."""
+    pass
+
+
+def handle_database_error(func):
+    """
+    Decorator for common database error handling.
+    
+    Args:
+        func: Function to wrap with error handling
+        
+    Returns:
+        Wrapped function with unified error handling
+    """
+    from functools import wraps
+    
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        try:
+            return func(self, *args, **kwargs)
+        except sqlite3.Error as e:
+            logger.error(f"Database error in {func.__name__}: {e}")
+            raise DatabaseError(f"Database operation failed: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error in {func.__name__}: {e}")
+            raise
+    return wrapper
 
 
 class SQLiteManager:
@@ -33,7 +63,9 @@ class SQLiteManager:
             config_manager: Configuration manager instance. If None, uses global instance.
             db_path: Path to SQLite database file. If None, uses default.
         """
-        self.config = config_manager or get_config_manager()
+        if config_manager is None:
+            config_manager = get_config_manager()
+        self.config = config_manager
         self.db_path = db_path or self._get_default_db_path()
         self.connection: Optional[sqlite3.Connection] = None
         self._connected = False
@@ -55,12 +87,13 @@ class SQLiteManager:
         
         return str(db_path)
     
+    @handle_database_error
     def connect(self) -> None:
         """
         Establish connection to SQLite database.
         
         Raises:
-            Exception: If connection cannot be established
+            DatabaseError: If connection cannot be established
         """
         try:
             # Use check_same_thread=False to allow multi-threading
@@ -111,12 +144,13 @@ class SQLiteManager:
             logger.info("Reconnecting to SQLite database...")
             self.connect()
     
+    @handle_database_error
     def create_tables(self) -> None:
         """
         Create tables for all data types.
         
         Raises:
-            Exception: If table creation fails
+            DatabaseError: If table creation fails
         """
         self.ensure_connection()
         
@@ -266,6 +300,7 @@ class SQLiteManager:
     
     # Stock Data Operations
     
+    @handle_database_error
     def insert_stock_data(self, data: Union[StockData, List[StockData]]) -> None:
         """
         Insert stock data into the database.
@@ -274,56 +309,52 @@ class SQLiteManager:
             data: Single StockData instance or list of StockData instances
             
         Raises:
-            Exception: If insertion fails
+            DatabaseError: If insertion fails
         """
         self.ensure_connection()
         
-        try:
-            cursor = self.connection.cursor()
-            
-            if isinstance(data, StockData):
-                data = [data]
-            
-            for stock_item in data:
-                cursor.execute(f"""
-                    INSERT OR IGNORE INTO {self.STOCK_DATA_TABLE} (
-                        symbol, date, open, high, low, close, volume, adjusted_close,
-                        dividend, stock_split, sma_20, sma_50, rsi, bb_upper, bb_middle,
-                        bb_lower, macd, macd_signal, macd_histogram, stoch_k,
-                        created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    stock_item.symbol,
-                    stock_item.date.isoformat(),
-                    stock_item.open,
-                    stock_item.high,
-                    stock_item.low,
-                    stock_item.close,
-                    stock_item.volume,
-                    stock_item.adjusted_close,
-                    stock_item.dividend,
-                    stock_item.stock_split,
-                    stock_item.sma_20,
-                    stock_item.sma_50,
-                    stock_item.rsi,
-                    stock_item.bb_upper,
-                    stock_item.bb_middle,
-                    stock_item.bb_lower,
-                    stock_item.macd,
-                    stock_item.macd_signal,
-                    stock_item.macd_histogram,
-                    stock_item.stoch_k,
-                    stock_item.created_at.isoformat(),
-                    stock_item.updated_at.isoformat()
-                ))
-            
-            self.connection.commit()
-            logger.debug(f"Inserted {len(data)} stock data records")
-            
-        except Exception as e:
-            logger.error(f"Failed to insert stock data: {e}")
-            raise
+        cursor = self.connection.cursor()
+        
+        if isinstance(data, StockData):
+            data = [data]
+        
+        for stock_item in data:
+            cursor.execute(f"""
+                INSERT OR IGNORE INTO {self.STOCK_DATA_TABLE} (
+                    symbol, date, open, high, low, close, volume, adjusted_close,
+                    dividend, stock_split, sma_20, sma_50, rsi, bb_upper, bb_middle,
+                    bb_lower, macd, macd_signal, macd_histogram, stoch_k,
+                    created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                stock_item.symbol,
+                stock_item.date.isoformat(),
+                stock_item.open,
+                stock_item.high,
+                stock_item.low,
+                stock_item.close,
+                stock_item.volume,
+                stock_item.adjusted_close,
+                stock_item.dividend,
+                stock_item.stock_split,
+                stock_item.sma_20,
+                stock_item.sma_50,
+                stock_item.rsi,
+                stock_item.bb_upper,
+                stock_item.bb_middle,
+                stock_item.bb_lower,
+                stock_item.macd,
+                stock_item.macd_signal,
+                stock_item.macd_histogram,
+                stock_item.stoch_k,
+                stock_item.created_at.isoformat(),
+                stock_item.updated_at.isoformat()
+            ))
+        
+        self.connection.commit()
+        logger.debug(f"Inserted {len(data)} stock data records")
     
+    @handle_database_error
     def upsert_stock_data(self, data: Union[StockData, List[StockData]]) -> None:
         """
         Insert or update stock data (upsert operation).
@@ -379,6 +410,7 @@ class SQLiteManager:
             logger.error(f"Failed to upsert stock data: {e}")
             raise
     
+    @handle_database_error
     def get_stock_data(
         self,
         symbol: str,
@@ -460,6 +492,7 @@ class SQLiteManager:
             logger.error(f"Failed to retrieve stock data: {e}")
             raise
     
+    @handle_database_error
     def get_latest_stock_date(self, symbol: str) -> Optional[datetime]:
         """
         Get the latest date for which stock data exists for a symbol.
@@ -488,6 +521,7 @@ class SQLiteManager:
             logger.error(f"Failed to get latest stock date: {e}")
             raise
     
+    @handle_database_error
     def update_stock_data(self, symbol: str, date: datetime, updates: Dict[str, Any]) -> bool:
         """
         Update specific fields of stock data for a symbol and date.
@@ -530,6 +564,7 @@ class SQLiteManager:
     
     # Financial Data Operations
     
+    @handle_database_error
     def insert_financial_data(self, data: Union[FinancialData, List[FinancialData]]) -> None:
         """
         Insert financial data into the database.
@@ -602,6 +637,7 @@ class SQLiteManager:
             logger.error(f"Failed to insert financial data: {e}")
             raise
     
+    @handle_database_error
     def upsert_financial_data(self, data: Union[FinancialData, List[FinancialData]]) -> None:
         """
         Insert or update financial data (upsert operation).
@@ -674,6 +710,7 @@ class SQLiteManager:
             logger.error(f"Failed to upsert financial data: {e}")
             raise
     
+    @handle_database_error
     def upsert_company_info(self, data: Union['CompanyInfo', List['CompanyInfo']]) -> None:
         """
         Insert or update company info (upsert operation).
@@ -726,6 +763,7 @@ class SQLiteManager:
             logger.error(f"Failed to upsert company info: {e}")
             raise
     
+    @handle_database_error
     def get_financial_data(
         self,
         symbol: str,
@@ -813,6 +851,7 @@ class SQLiteManager:
             logger.error(f"Failed to retrieve financial data: {e}")
             raise
     
+    @handle_database_error
     def get_data_summary(self, symbol: str) -> Dict[str, Any]:
         """
         Get a summary of available data for a symbol.
@@ -881,6 +920,7 @@ class SQLiteManager:
             logger.error(f"Failed to get data summary for {symbol}: {e}")
             raise
     
+    @handle_database_error
     def get_missing_dates(
         self,
         symbol: str,
@@ -927,6 +967,7 @@ class SQLiteManager:
     
     # Database management operations
     
+    @handle_database_error
     def get_database_info(self) -> Dict[str, Any]:
         """
         Get database information and statistics.
@@ -983,6 +1024,7 @@ class SQLiteManager:
     
     # NASDAQ Symbols Operations
     
+    @handle_database_error
     def upsert_nasdaq_symbols(self, symbols: Union[SymbolInfo, List[SymbolInfo]]) -> None:
         """
         Insert or update NASDAQ symbol information (upsert operation).
@@ -1024,6 +1066,7 @@ class SQLiteManager:
             logger.error(f"Failed to upsert NASDAQ symbols: {e}")
             raise
     
+    @handle_database_error
     def get_nasdaq_symbols(
         self,
         active_only: bool = True,
@@ -1103,6 +1146,7 @@ class SQLiteManager:
             logger.error(f"Failed to retrieve NASDAQ symbols: {e}")
             raise
     
+    @handle_database_error
     def get_nasdaq_symbol(self, symbol: str) -> Optional[SymbolInfo]:
         """
         Retrieve a specific NASDAQ symbol.
@@ -1116,6 +1160,7 @@ class SQLiteManager:
         results = self.get_nasdaq_symbols(active_only=False, limit=1)
         return results[0] if results else None
     
+    @handle_database_error
     def get_nasdaq_sectors(self) -> List[str]:
         """
         Get list of all sectors in NASDAQ symbols.
@@ -1140,6 +1185,7 @@ class SQLiteManager:
             logger.error(f"Failed to get NASDAQ sectors: {e}")
             raise
     
+    @handle_database_error
     def get_nasdaq_symbol_count(self, active_only: bool = True) -> int:
         """
         Get count of NASDAQ symbols.
@@ -1169,6 +1215,7 @@ class SQLiteManager:
             logger.error(f"Failed to get NASDAQ symbol count: {e}")
             raise
     
+    @handle_database_error
     def get_company_info(self, symbol: str) -> Optional['CompanyInfo']:
         """
         Get company information for a symbol.

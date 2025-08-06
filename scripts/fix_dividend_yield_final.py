@@ -7,7 +7,6 @@ yfinanceのdividendYieldは既にパーセンテージ形式（6.29 = 6.29%）
 
 import os
 import sqlite3
-import sys
 
 
 def fix_dividend_yield_final(db_path: str = "stock_data.db"):

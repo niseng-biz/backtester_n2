@@ -15,7 +15,7 @@ sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
 from stock_database.adapters.backtester_adapter import BacktesterDataAdapter
 from stock_database.config import get_config_manager
-from stock_database.database import MongoDBManager
+from stock_database.sqlite_database import SQLiteManager
 from stock_database.repositories.data_access_api import DataAccessAPI
 from stock_database.utils.data_fetcher import DataFetcher
 
@@ -133,7 +133,7 @@ def test_data_storage():
     try:
         # Initialize components
         config = get_config_manager()
-        db_manager = MongoDBManager(config)
+        db_manager = SQLiteManager(config)
         data_fetcher = DataFetcher()
         
         # Connect to database
@@ -316,7 +316,7 @@ def test_database_statistics():
     
     try:
         config = get_config_manager()
-        db_manager = MongoDBManager(config)
+        db_manager = SQLiteManager(config)
         db_manager.connect()
         
         # Get database information

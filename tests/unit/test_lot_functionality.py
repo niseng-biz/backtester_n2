@@ -14,9 +14,10 @@ def test_lot_config():
     """Test LOT configuration functionality."""
     print("🧪 LOT設定機能をテスト...")
     
-    # Test different asset types
-    stock_config = LotConfig(asset_type="stock", min_lot_size=0.01, lot_step=0.01)
-    crypto_config = LotConfig(asset_type="crypto", min_lot_size=0.001, lot_step=0.001)
+    # Test different asset types using standard configurations
+    standard_configs = LotConfig.create_standard_configs()
+    stock_config = standard_configs['stock']
+    crypto_config = standard_configs['crypto']
     
     print(f"\n📊 株式LOT設定:")
     print(f"  基本LOTサイズ: {stock_config.base_lot_size}")
@@ -48,7 +49,7 @@ def test_lot_orders():
     print(f"\n🧪 LOTベースオーダー作成をテスト...")
     
     # Create crypto lot config for Bitcoin trading
-    crypto_config = LotConfig(asset_type="crypto", min_lot_size=0.01, lot_step=0.01)
+    crypto_config = LotConfig.create_standard_configs()['crypto']
     
     # Test different lot sizes
     lot_sizes = [1.0, 0.5, 0.1, 0.01]
@@ -86,12 +87,7 @@ def test_lot_strategies():
         return
     
     # Create crypto lot configuration
-    crypto_config = LotConfig(
-        asset_type="crypto",
-        min_lot_size=0.01,
-        lot_step=0.01,
-        base_lot_size=1.0
-    )
+    crypto_config = LotConfig.create_standard_configs()['crypto']
     
     # Test Moving Average strategy with 0.1 LOT positions
     print(f"\n📈 移動平均戦略 (0.1LOT)をテスト...")
@@ -170,7 +166,7 @@ def test_lot_calculations():
     """Test lot calculation edge cases."""
     print(f"\n🧪 LOT計算エッジケースをテスト...")
     
-    crypto_config = LotConfig(asset_type="crypto", min_lot_size=0.01, lot_step=0.01)
+    crypto_config = LotConfig.create_standard_configs()['crypto']
     
     # Test scenarios
     scenarios = [

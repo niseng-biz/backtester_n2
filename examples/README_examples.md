@@ -6,37 +6,8 @@
 
 ### 📊 株式データ取得システム
 
-#### 1. `example_stockdatafetch_quick_start.py` - クイックスタート ⭐
-**最初に実行すべきファイル**
-- 実行時間: 約2-3分
-- 最小限の設定で基本機能を体験
-- 3つの主要銘柄（AAPL, GOOGL, MSFT）のデータを取得
 
-```bash
-python examples/example_stockdatafetch_quick_start.py
-```
-
-#### 2. `example_stockdatafetch_basic_stock_data.py` - 基本的な使用方法
-- 株式データ取得の基本的な流れを学習
-- データの保存と検索方法
-- 簡単なデータ分析例
-
-```bash
-python examples/example_stockdatafetch_basic_stock_data.py
-```
-
-#### 3. `example_stockdatafetch_database_setup_example.py` - 初期セットアップ
-**システム管理者が最初に実行**
-- データベースの初期化
-- インデックスの作成
-- システム要件のチェック
-- S&P 500とNASDAQ 100のシンボルリスト取得
-
-```bash
-python examples/example_stockdatafetch_database_setup_example.py
-```
-
-#### 4. `example_stockdatafetch_data_fetching.py` - 実践的なデータ取得
+#### 1. `example_stockdatafetch_data_fetching.py` - 実践的なデータ取得
 **実際の運用で使用するパターン**
 - 大量データの効率的な取得
 - バッチ処理と進捗表示
@@ -49,7 +20,7 @@ python examples/example_stockdatafetch_data_fetching.py
 
 ### 🔄 バックテストシステム
 
-#### 5. `example_basktester_usage.py` - 基本的なバックテスト
+#### 2. `example_basktester_usage.py` - 基本的なバックテスト
 - バイアンドホールド戦略の実行
 - 移動平均クロスオーバー戦略
 - RSIナンピン戦略
@@ -59,7 +30,7 @@ python examples/example_stockdatafetch_data_fetching.py
 python examples/example_basktester_usage.py
 ```
 
-#### 6. `example_basktester_usage_optimize.py` - パラメータ最適化
+#### 3. `example_basktester_usage_optimize.py` - パラメータ最適化
 - Optunaを使用した戦略パラメータ最適化
 - 訓練・検証・テストデータ分割
 - 最適化結果の可視化
@@ -68,7 +39,7 @@ python examples/example_basktester_usage.py
 python examples/example_basktester_usage_optimize.py
 ```
 
-#### 7. `example_basktester_usage_optimize_with_suggestions.py` - 提案付き最適化
+#### 4. `example_basktester_usage_optimize_with_suggestions.py` - 提案付き最適化
 - ユーザー提案を活用した最適化
 - 初期パラメータ提案機能
 - 最適化効率の向上
@@ -79,7 +50,7 @@ python examples/example_basktester_usage_optimize_with_suggestions.py
 
 ### 📈 ダッシュボードシステム
 
-#### 8. `example_dashboard_run_dashboard.py` - 基本ダッシュボード
+#### 5. `example_dashboard_run_dashboard.py` - 基本ダッシュボード
 - Streamlitベースの株式ダッシュボード
 - リアルタイムデータ表示
 - インタラクティブなチャート
@@ -88,7 +59,7 @@ python examples/example_basktester_usage_optimize_with_suggestions.py
 python examples/example_dashboard_run_dashboard.py
 ```
 
-#### 9. `example_dashboard_advanced_stock_dashboard.py` - 高度なダッシュボード
+#### 6. `example_dashboard_advanced_stock_dashboard.py` - 高度なダッシュボード
 - 高度な分析機能
 - カスタマイズ可能なビュー
 - 複数データソースの統合
@@ -162,7 +133,7 @@ python examples/example_dashboard_advanced_stock_dashboard.py
 
 ### 必要なソフトウェア
 - Python 3.8以上
-- MongoDB（ローカルまたはクラウド）- 株式データ取得用
+- SQLite（Pythonに内蔵）- 株式データ取得用
 - インターネット接続（Yahoo Finance APIアクセス用）
 
 ### 必要なPythonパッケージ
@@ -171,8 +142,8 @@ pip install -r requirements.txt
 ```
 
 主要パッケージ:
-- `pymongo` - MongoDB接続（株式データ取得）
 - `yfinance` - Yahoo Finance API（株式データ取得）
+- `lxml` - HTMLパース（S&P500/NASDAQ100データ取得）
 - `pandas` - データ処理（全システム共通）
 - `numpy` - 数値計算（バックテスト）
 - `matplotlib` - グラフ作成（バックテスト・ダッシュボード）
@@ -184,14 +155,14 @@ pip install -r requirements.txt
 
 ### よくある問題と解決方法
 
-#### 1. MongoDBに接続できない（株式データ取得）
+#### 1. SQLiteデータベースに接続できない（株式データ取得）
 ```
-Error: ServerSelectionTimeoutError
+Error: database is locked
 ```
 **解決方法:**
-- MongoDBサービスが起動していることを確認
-- `config.yaml`の接続設定を確認
-- ファイアウォール設定を確認
+- データベースファイルが他のプロセスで使用されていないことを確認
+- `data/stock_data.db`ファイルの権限を確認
+- 必要に応じてデータベースファイルを削除して再作成
 
 #### 2. Yahoo Finance APIからデータを取得できない
 ```

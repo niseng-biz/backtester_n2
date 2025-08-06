@@ -21,57 +21,23 @@ from stock_database.repositories.stock_data_repository import \
 class TestStockDataRepository:
     """Test cases for StockDataRepository."""
     
-    @pytest.fixture
-    def mock_db_manager(self):
-        """Create a mock database manager."""
-        mock_db = Mock()
-        mock_db.STOCK_DATA_COLLECTION = "stock_data"
-        mock_db.upsert_stock_data = Mock()
-        mock_db.get_stock_data = Mock()
-        mock_db.get_latest_stock_date = Mock()
-        mock_db.update_stock_data = Mock()
-        mock_db.get_collection = Mock()
-        return mock_db
+
     
     @pytest.fixture
     def repository(self, mock_db_manager):
         """Create a StockDataRepository instance with mocked dependencies."""
         return StockDataRepository(db_manager=mock_db_manager, cache_ttl=60)
     
-    @pytest.fixture
-    def sample_stock_data(self):
-        """Create sample stock data for testing."""
-        return [
-            StockData(
-                symbol="AAPL",
-                date=datetime(2024, 1, 1),
-                open=150.0,
-                high=155.0,
-                low=149.0,
-                close=154.0,
-                volume=1000000,
-                adjusted_close=154.0
-            ),
-            StockData(
-                symbol="AAPL",
-                date=datetime(2024, 1, 2),
-                open=154.0,
-                high=158.0,
-                low=153.0,
-                close=157.0,
-                volume=1200000,
-                adjusted_close=157.0
-            )
-        ]
+
     
-    def test_save_stock_data_valid(self, repository, sample_stock_data):
+    def test_save_stock_data_valid(self, repository, sample_stock_data_list):
         """Test saving valid stock data."""
-        repository.save_stock_data(sample_stock_data)
+        repository.save_stock_data(sample_stock_data_list)
         
         # Verify upsert was called with valid data
         repository.db_manager.upsert_stock_data.assert_called_once()
         args = repository.db_manager.upsert_stock_data.call_args[0][0]
-        assert len(args) == 2
+        assert len(args) == 5
         assert all(isinstance(item, StockData) for item in args)
     
     def test_save_stock_data_empty(self, repository):
@@ -176,53 +142,23 @@ class TestStockDataRepository:
 class TestFinancialDataRepository:
     """Test cases for FinancialDataRepository."""
     
-    @pytest.fixture
-    def mock_db_manager(self):
-        """Create a mock database manager."""
-        mock_db = Mock()
-        mock_db.FINANCIAL_DATA_COLLECTION = "financial_data"
-        mock_db.upsert_financial_data = Mock()
-        mock_db.get_financial_data = Mock()
-        mock_db.get_collection = Mock()
-        mock_db._doc_to_financial_data = Mock()
-        return mock_db
+
     
     @pytest.fixture
     def repository(self, mock_db_manager):
         """Create a FinancialDataRepository instance with mocked dependencies."""
         return FinancialDataRepository(db_manager=mock_db_manager, cache_ttl=60)
     
-    @pytest.fixture
-    def sample_financial_data(self):
-        """Create sample financial data for testing."""
-        return [
-            FinancialData(
-                symbol="AAPL",
-                fiscal_year=2023,
-                revenue=100000000000,
-                net_income=25000000000,
-                eps=6.15,
-                per=25.0,
-                roe=0.167
-            ),
-            FinancialData(
-                symbol="AAPL",
-                fiscal_year=2024,
-                fiscal_quarter=1,
-                revenue=25000000000,
-                net_income=6000000000,
-                eps=1.50
-            )
-        ]
+
     
-    def test_save_financial_data_valid(self, repository, sample_financial_data):
+    def test_save_financial_data_valid(self, repository, sample_financial_data_list):
         """Test saving valid financial data."""
-        repository.save_financial_data(sample_financial_data)
+        repository.save_financial_data(sample_financial_data_list)
         
         # Verify upsert was called with valid data
         repository.db_manager.upsert_financial_data.assert_called_once()
         args = repository.db_manager.upsert_financial_data.call_args[0][0]
-        assert len(args) == 2
+        assert len(args) == 3
         assert all(isinstance(item, FinancialData) for item in args)
     
     def test_get_financial_data(self, repository):
@@ -317,38 +253,16 @@ class TestCompanyInfoRepository:
         """Create a CompanyInfoRepository instance with mocked dependencies."""
         return CompanyInfoRepository(db_manager=mock_db_manager, cache_ttl=60)
     
-    @pytest.fixture
-    def sample_company_info(self):
-        """Create sample company info for testing."""
-        return [
-            CompanyInfo(
-                symbol="AAPL",
-                company_name="Apple Inc.",
-                sector="Technology",
-                industry="Consumer Electronics",
-                market_cap=3000000000000,
-                country="United States",
-                currency="USD",
-                exchange="NASDAQ"
-            ),
-            CompanyInfo(
-                symbol="GOOGL",
-                company_name="Alphabet Inc.",
-                sector="Technology",
-                industry="Internet Services",
-                market_cap=2000000000000,
-                country="United States",
-                currency="USD",
-                exchange="NASDAQ"
-            )
-        ]
+
     
     def test_save_company_info_valid(self, repository, sample_company_info):
         """Test saving valid company info."""
         mock_collection = Mock()
         repository.db_manager.get_collection.return_value = mock_collection
         
-        repository.save_company_info(sample_company_info)
+        # Create a list with the single company info object
+        company_info_list = [sample_company_info]
+        repository.save_company_info(company_info_list)
         
         # Verify bulk_write was called
         mock_collection.bulk_write.assert_called_once()

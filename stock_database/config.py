@@ -4,13 +4,19 @@ Configuration management for the stock database system.
 
 import logging
 import os
+from functools import wraps
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Callable
 
 import yaml
 from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
+
+
+class ConfigurationError(Exception):
+    """Custom exception for configuration-related errors."""
+    pass
 
 
 class ConfigManager:
@@ -68,33 +74,17 @@ class ConfigManager:
     
     def _get_default_config(self) -> Dict[str, Any]:
         """Get default configuration values."""
-        # Default to SQLite for simplicity
+        # Default to SQLite only
         database_config = {
             "type": "sqlite",
             "sqlite": {
-                "path": "data/stock_data.db"
+                "path": "data/stock_data.db",
+                "connection_timeout": 30,
+                "max_connections": 10
             }
         }
         
-        # Check for MongoDB Atlas environment variables (optional)
-        mongodb_address = os.getenv('MONGODB_ADRESS')  # Note: keeping original typo from .env
-        mongodb_username = os.getenv('MONGODB_USERNAME')
-        mongodb_password = os.getenv('MONGODB_PASSWORD')
-        
-        # If MongoDB environment variables are set, add MongoDB config
-        if mongodb_address and mongodb_username and mongodb_password:
-            database_config["mongodb"] = {
-                "connection_string": f"{mongodb_address}",
-                "username": mongodb_username,
-                "password": mongodb_password,
-                "database": "stock_data",
-                "connection_timeout": 30,
-                "max_pool_size": 100,
-                "is_atlas": True
-            }
-            logger.info("MongoDB Atlas configuration available from environment variables")
-        
-        logger.info(f"Using {database_config['type']} database configuration")
+        logger.info("Using SQLite database configuration")
         
         return {
             "database": database_config,
@@ -247,3 +237,30 @@ def initialize_config(config_path: Optional[str] = None) -> ConfigManager:
     global _config_manager
     _config_manager = ConfigManager(config_path)
     return _config_manager
+
+
+def with_config(func: Callable) -> Callable:
+    """
+    Decorator that automatically provides a config_manager parameter if not provided.
+    
+    This decorator helps eliminate duplicate config manager initialization code
+    by automatically injecting the global config manager instance when needed.
+    
+    Args:
+        func: Function to decorate
+        
+    Returns:
+        Decorated function with automatic config manager injection
+        
+    Example:
+        @with_config
+        def initialize_database(config_manager=None):
+            # config_manager will be automatically provided if None
+            return SQLiteManager(config_manager)
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if 'config_manager' not in kwargs or kwargs['config_manager'] is None:
+            kwargs['config_manager'] = get_config_manager()
+        return func(*args, **kwargs)
+    return wrapper

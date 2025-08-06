@@ -22,8 +22,7 @@ plotly>=6.0.0
 # Configuration management
 PyYAML>=6.0.0
 
-# Database
-pymongo>=4.0.0,<5.0.0
+# Database (SQLite is built-in to Python)
 
 # Yahoo Finance data
 yfinance>=0.2.0

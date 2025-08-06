@@ -5,7 +5,6 @@ SQLiteデータベースの統計情報を確認するスクリプト
 
 import os
 import sqlite3
-import sys
 from datetime import datetime
 
 

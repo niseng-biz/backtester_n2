@@ -14,7 +14,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from stock_database.config import get_config_manager
-from stock_database.database import MongoDBManager
+from stock_database.sqlite_database import SQLiteManager
 from stock_database.models.company_info import CompanyInfo
 from stock_database.models.financial_data import FinancialData
 from stock_database.models.stock_data import StockData
@@ -34,7 +34,7 @@ def setup_database():
         
         # Initialize configuration and database manager
         config = get_config_manager()
-        db_manager = MongoDBManager(config)
+        db_manager = SQLiteManager(config)
         
         # Test connection
         logger.info("Testing MongoDB Atlas connection...")
@@ -80,7 +80,7 @@ def create_sample_data():
         logger.info("Creating sample data...")
         
         config = get_config_manager()
-        db_manager = MongoDBManager(config)
+        db_manager = SQLiteManager(config)
         db_manager.connect()
         
         # Sample company information
@@ -220,7 +220,7 @@ def verify_setup():
         logger.info("Verifying database setup...")
         
         config = get_config_manager()
-        db_manager = MongoDBManager(config)
+        db_manager = SQLiteManager(config)
         db_manager.connect()
         
         # Get database information

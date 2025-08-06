@@ -5,7 +5,6 @@
 
 import os
 import sqlite3
-import sys
 
 
 def fix_dividend_yield(db_path: str = "stock_data.db"):

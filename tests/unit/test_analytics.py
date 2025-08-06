@@ -2,11 +2,12 @@
 Unit tests for analytics engine.
 """
 
-import pytest
-import math
 from datetime import datetime, timedelta
+
+import pytest
+
 from backtester.analytics import AnalyticsEngine
-from backtester.models import Trade, OrderAction, OrderType
+from backtester.models import OrderAction, OrderType, Trade
 
 
 class TestAnalyticsEngine:

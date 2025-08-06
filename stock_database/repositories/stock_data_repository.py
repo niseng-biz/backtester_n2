@@ -6,10 +6,13 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
-from ..database import MongoDBManager
 from ..models.stock_data import StockData
-from .base_repository import (BaseRepository, with_caching,
-                              with_performance_monitoring)
+from ..sqlite_database import SQLiteManager
+from .base_repository import (
+    BaseRepository,
+    with_caching,
+    with_performance_monitoring,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -26,12 +29,12 @@ class StockDataRepository(BaseRepository):
     - Performance monitoring
     """
     
-    def __init__(self, db_manager: Optional[MongoDBManager] = None, cache_ttl: int = 300):
+    def __init__(self, db_manager: Optional[SQLiteManager] = None, cache_ttl: int = 300):
         """
         Initialize stock data repository.
         
         Args:
-            db_manager: MongoDB manager instance
+            db_manager: SQLite manager instance
             cache_ttl: Cache time-to-live in seconds (default: 5 minutes)
         """
         super().__init__(db_manager, cache_ttl)

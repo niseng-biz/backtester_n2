@@ -47,6 +47,9 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 # 依存関係インストール
 pip install -r requirements.txt
 
+# 環境チェック（推奨）
+python scripts/check_environment.py
+
 # その他のインストールオプション
 # 開発環境: pip install -r requirements/requirements-dev.txt
 # 軽量版: pip install -r requirements/requirements-minimal.txt
@@ -68,31 +71,31 @@ pip install -r requirements.txt
 
 このバックテスターには、Yahoo Financeから株価データを自動取得・管理する高性能データベースシステムが統合されています。
 
-#### 🚀 curl_cffi による高速データ取得（デフォルト）
+#### 🚀 高性能データ取得システム
 
-- **2倍高速**: 従来のyfinanceライブラリより50%高速なリクエスト処理
-- **大容量バッチ**: 20銘柄の並列処理（従来の10銘柄から向上）
-- **高い成功率**: ブラウザ偽装による95%の成功率
-- **堅牢なエラー処理**: 指数バックオフによる自動リトライ
+- **SQLiteベース**: 軽量で高速なローカルデータベース
+- **S&P500/NASDAQ100対応**: 600銘柄以上の自動取得
+- **Wikipedia連携**: リアルタイムでの銘柄リスト更新
+- **堅牢なエラー処理**: 統一されたエラーハンドリング
 
 #### データベース機能
 
 ```python
-from stock_database.utils.data_fetcher import DataFetcher
-from stock_database.database import MongoDBManager
+from stock_database.utils.sp500_nasdaq100_source import SP500Nasdaq100Source
+from stock_database.database_factory import DatabaseManager
+from stock_database.config import get_config_manager
 
-# 高性能データ取得（curl_cffiがデフォルト）
-data_fetcher = DataFetcher()
+# S&P500/NASDAQ100銘柄取得
+source = SP500Nasdaq100Source()
+symbols = source.fetch_symbols(limit=100)
 
-# 複数銘柄の並列取得
-symbols = ['AAPL', 'GOOGL', 'MSFT', 'TSLA']
-results = data_fetcher.fetch_stock_data(symbols)
+# データベース管理
+config_manager = get_config_manager()
+db_manager = DatabaseManager(config_manager)
+db_manager.connect()
 
-# 差分更新（新しいデータのみ取得）
-incremental_results = data_fetcher.schedule_incremental_update(symbols)
-
-# 包括的データ取得（株価・財務・企業情報）
-all_data = data_fetcher.fetch_all_data(symbols)
+# 高度なダッシュボード
+# streamlit run examples/example_dashboard_advanced_stock_dashboard.py
 ```
 
 ### 基本的な使用方法
@@ -149,12 +152,20 @@ backtester-demo
 
 `examples/` フォルダには、様々な使用例とデモンストレーションが含まれています：
 
-- **`example_usage.py`** ⭐ - メインデモ（全機能の包括的な例）
-- **`advanced_stock_dashboard.py`** - 高度な株式分析ダッシュボード
-- **`backtester_adapter_example.py`** - システム統合の例
-- **`data_access_api_example.py`** - データアクセスAPIの使用例
+- **`example_backtester_usage.py`** ⭐ - メインデモ（全機能の包括的な例）
+- **`example_dashboard_advanced_stock_dashboard.py`** - 高度な株式分析ダッシュボード
+- **`example_stockdatafetch_data_fetching.py`** - 株式データ取得の例
 
-詳細は [`examples/README.md`](examples/README.md) をご覧ください。
+詳細は [`examples/README_examples.md`](examples/README_examples.md) をご覧ください。
+
+### 🛠️ Scripts - ユーティリティツール
+
+`scripts/` フォルダには、開発・運用支援ツールが含まれています：
+
+- **`check_environment.py`** - 環境チェックツール
+- **`performance_measurement.py`** - パフォーマンス測定ツール
+- **`debug_sp500_nasdaq100.py`** - データ取得デバッグツール
+- **`test_full_symbol_fetch.py`** - 銘柄取得テストツール
 
 これは以下を実演します：
 - バイアンドホールド戦略

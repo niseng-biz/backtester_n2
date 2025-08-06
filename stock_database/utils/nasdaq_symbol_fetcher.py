@@ -5,7 +5,7 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
-from ..config import get_config_manager
+from ..config import get_config_manager, with_config
 from ..database_factory import DatabaseManager
 from ..models.symbol_info import SymbolInfo
 from ..repositories.symbol_repository import SymbolRepository
@@ -84,7 +84,9 @@ class NasdaqSymbolFetcher:
             db_manager: Database manager instance
             data_sources: List of data sources to use
         """
-        self.config_manager = config_manager or get_config_manager()
+        if config_manager is None:
+            config_manager = get_config_manager()
+        self.config_manager = config_manager
         self.db_manager = db_manager or DatabaseManager(self.config_manager)
         self.repository = SymbolRepository(self.db_manager)
         

@@ -4,7 +4,7 @@ Initialization module for the stock database system.
 
 import logging
 
-from .config import get_config_manager, initialize_config
+from .config import get_config_manager, initialize_config, with_config
 from .logger import setup_logger
 
 
@@ -29,25 +29,28 @@ def initialize_stock_database(config_path: str = None) -> None:
     logger.info(f"Tracking {len(config_manager.get_symbols())} symbols")
 
 
-def get_system_status() -> dict:
+@with_config
+def get_system_status(config_manager=None) -> dict:
     """
     Get current system status and configuration summary.
     
+    Args:
+        config_manager: Configuration manager instance
+        
     Returns:
         Dictionary containing system status information
     """
-    config = get_config_manager()
     
     return {
-        "config_path": config.config_path,
-        "database_host": config.get("database.mongodb.host"),
-        "database_name": config.get("database.mongodb.database"),
-        "symbols_count": len(config.get_symbols()),
-        "symbols": config.get_symbols(),
-        "logging_level": config.get("logging.level"),
+        "config_path": config_manager.config_path,
+        "database_host": config_manager.get("database.mongodb.host"),
+        "database_name": config_manager.get("database.mongodb.database"),
+        "symbols_count": len(config_manager.get_symbols()),
+        "symbols": config_manager.get_symbols(),
+        "logging_level": config_manager.get("logging.level"),
         "yahoo_finance_settings": {
-            "request_delay": config.get("data_fetching.yahoo_finance.request_delay"),
-            "max_retries": config.get("data_fetching.yahoo_finance.max_retries"),
-            "batch_size": config.get("data_fetching.yahoo_finance.batch_size")
+            "request_delay": config_manager.get("data_fetching.yahoo_finance.request_delay"),
+            "max_retries": config_manager.get("data_fetching.yahoo_finance.max_retries"),
+            "batch_size": config_manager.get("data_fetching.yahoo_finance.batch_size")
         }
     }

@@ -443,7 +443,7 @@ data = api.get_stock_data("AAPL")
 ### From Direct Database Access
 ```python
 # Old way - direct database access
-db_manager = MongoDBManager()
+db_manager = SQLiteManager()
 collection = db_manager.get_collection("stock_data")
 docs = collection.find({"symbol": "AAPL"})
 

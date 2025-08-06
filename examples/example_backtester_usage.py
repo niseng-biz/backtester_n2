@@ -42,9 +42,16 @@ from datetime import datetime
 # Add the parent directory to the Python path to import backtester
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from backtester import (Backtester, BuyAndHoldStrategy, ConfigFactory,
-                        CryptoDataReader, LotSizeMode, MovingAverageStrategy,
-                        RSIAveragingStrategy, VisualizationEngine)
+from backtester import (
+    Backtester,
+    BuyAndHoldStrategy,
+    ConfigFactory,
+    CryptoDataReader,
+    LotSizeMode,
+    MovingAverageStrategy,
+    RSIAveragingStrategy,
+    VisualizationEngine,
+)
 
 
 def print_separator(title: str):

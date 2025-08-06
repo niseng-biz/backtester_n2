@@ -6,7 +6,7 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from ..database import MongoDBManager
+from ..sqlite_database import SQLiteManager
 from ..models.company_info import CompanyInfo
 from .base_repository import (BaseRepository, with_caching,
                               with_performance_monitoring)
@@ -25,7 +25,7 @@ class CompanyInfoRepository(BaseRepository):
     - Performance monitoring
     """
     
-    def __init__(self, db_manager: Optional[MongoDBManager] = None, cache_ttl: int = 1800):
+    def __init__(self, db_manager: Optional[SQLiteManager] = None, cache_ttl: int = 1800):
         """
         Initialize company info repository.
         
@@ -94,19 +94,15 @@ class CompanyInfoRepository(BaseRepository):
                 })
             
             if operations:
-                # Use bulk_write for efficiency
-                import pymongo
-                bulk_operations = []
+                # Use SQLite bulk operations for efficiency
                 for op in operations:
-                    bulk_operations.append(
-                        pymongo.ReplaceOne(
-                            op["replaceOne"]["filter"],
-                            op["replaceOne"]["replacement"],
-                            upsert=True
-                        )
-                    )
-                
-                collection.bulk_write(bulk_operations, ordered=False)
+                    filter_data = op["replaceOne"]["filter"]
+                    replacement_data = op["replaceOne"]["replacement"]
+                    
+                    # Use upsert operation for SQLite
+                    self.db_manager.upsert_company_info([
+                        CompanyInfo(**replacement_data)
+                    ])
                 
                 # Clear cache for affected symbols
                 symbols = {item.symbol for item in valid_data}

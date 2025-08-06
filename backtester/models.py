@@ -99,6 +99,61 @@ class LotConfig:
         multiplier = self.lot_multipliers.get(self.asset_type, 1)
         return units / (self.base_lot_size * multiplier)
 
+    def validate_and_round(self, lot_size: float) -> float:
+        """
+        Validate and round lot size to nearest valid increment.
+        
+        This method combines validation and rounding logic to eliminate
+        duplicate code patterns across the codebase.
+        
+        Args:
+            lot_size: The lot size to validate and round
+            
+        Returns:
+            Validated and rounded lot size
+        """
+        if not self.validate_lot_size(lot_size):
+            lot_size = self.round_lot_size(lot_size)
+        return lot_size
+
+    @classmethod
+    def create_standard_configs(cls) -> Dict[str, 'LotConfig']:
+        """
+        Create standard LOT configurations for different asset types.
+        
+        This factory method eliminates duplicate LOT configuration initialization
+        code by providing pre-configured settings for common asset types.
+        
+        Returns:
+            Dictionary of standard LOT configurations keyed by asset type
+        """
+        return {
+            'crypto': cls(
+                asset_type="crypto",
+                min_lot_size=0.01,
+                lot_step=0.01,
+                lot_size_mode=LotSizeMode.VARIABLE,
+                capital_percentage=0.1,
+                max_lot_size=10.0
+            ),
+            'stock': cls(
+                asset_type="stock",
+                min_lot_size=0.01,
+                lot_step=0.01,
+                lot_size_mode=LotSizeMode.FIXED,
+                capital_percentage=0.1,
+                max_lot_size=100.0
+            ),
+            'forex': cls(
+                asset_type="forex",
+                min_lot_size=0.01,
+                lot_step=0.01,
+                lot_size_mode=LotSizeMode.VARIABLE,
+                capital_percentage=0.05,
+                max_lot_size=50.0
+            )
+        }
+
     def calculate_lot_size(
         self,
         available_capital: float,

@@ -5,13 +5,12 @@ This module provides the DataFetcher class that orchestrates data fetching opera
 with support for parallel processing, incremental updates, and error recovery.
 """
 
-import asyncio
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from ..config import get_config_manager
+from ..config import get_config_manager, with_config
 from ..database_factory import DatabaseManager
 from ..logger import LoggerMixin
 from ..models.company_info import CompanyInfo
@@ -52,7 +51,9 @@ class DataFetcher(LoggerMixin):
             yahoo_client: Yahoo Finance client instance
             use_curl_client: Whether to use curl_cffi client (None=auto from config, True=force curl_cffi, False=force yfinance)
         """
-        self.config_manager = config_manager or get_config_manager()
+        if config_manager is None:
+            config_manager = get_config_manager()
+        self.config_manager = config_manager
         self.db_manager = db_manager or DatabaseManager(self.config_manager)
         
         # Choose client based on configuration

@@ -14,7 +14,7 @@ from urllib.parse import urlencode
 import pandas as pd
 from curl_cffi import requests
 
-from ..config import get_config_manager
+from ..config import get_config_manager, with_config
 from ..logger import LoggerMixin
 
 
@@ -52,7 +52,9 @@ class YahooFinanceCurlClient(LoggerMixin):
         Args:
             config_manager: Configuration manager instance. If None, uses global instance.
         """
-        self.config_manager = config_manager or get_config_manager()
+        if config_manager is None:
+            config_manager = get_config_manager()
+        self.config_manager = config_manager
         self._load_config()
         self._last_request_time = 0.0
         

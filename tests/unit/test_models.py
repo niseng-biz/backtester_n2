@@ -6,8 +6,13 @@ from datetime import date, datetime
 
 import pytest
 
-from stock_database.models import (CompanyInfo, DataValidator, FinancialData,
-                                   StockData, ValidationResult)
+from stock_database.models import (
+    CompanyInfo,
+    DataValidator,
+    FinancialData,
+    StockData,
+    ValidationResult,
+)
 
 
 class TestStockData:

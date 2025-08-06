@@ -6,7 +6,7 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
-from ..database import MongoDBManager
+from ..sqlite_database import SQLiteManager
 from ..models.financial_data import FinancialData
 from .base_repository import (BaseRepository, with_caching,
                               with_performance_monitoring)
@@ -25,7 +25,7 @@ class FinancialDataRepository(BaseRepository):
     - Performance monitoring
     """
     
-    def __init__(self, db_manager: Optional[MongoDBManager] = None, cache_ttl: int = 600):
+    def __init__(self, db_manager: Optional[SQLiteManager] = None, cache_ttl: int = 600):
         """
         Initialize financial data repository.
         

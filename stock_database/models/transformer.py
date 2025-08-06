@@ -1,7 +1,6 @@
 """
 Data transformation utilities for converting Yahoo Finance data to internal models.
 """
-import math
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 

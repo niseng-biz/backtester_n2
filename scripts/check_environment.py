@@ -8,6 +8,7 @@ import sys
 import subprocess
 import importlib
 from pathlib import Path
+import os
 
 
 def check_python_version():
@@ -45,6 +46,9 @@ def check_required_packages():
         ('matplotlib', '3.4.0'),
         ('pytest', '6.2.0'),
         ('scipy', '1.7.0'),
+        ('lxml', '4.6.0'),  # Added for SP500/NASDAQ data fetching
+        ('requests', '2.25.0'),
+        ('streamlit', '1.20.0'),
     ]
     
     all_installed = True
@@ -68,21 +72,28 @@ def check_project_structure():
     """Check if project structure is correct."""
     print("\n📁 Checking project structure...")
     
+    # Get project root (parent directory of scripts)
+    project_root = Path(__file__).parent.parent
+    
     required_files = [
         'backtester/__init__.py',
         'backtester/models.py',
         'backtester/backtester.py',
         'backtester/analytics.py',
         'backtester/visualization.py',
-        'tests/test_visualization.py',
+        'stock_database/__init__.py',
+        'stock_database/config.py',
+        'tests/conftest.py',
         'requirements.txt',
         'README.md',
+        'config.yaml',
     ]
     
     all_present = True
     
     for file_path in required_files:
-        if Path(file_path).exists():
+        full_path = project_root / file_path
+        if full_path.exists():
             print(f"✅ {file_path}")
         else:
             print(f"❌ {file_path} - Missing")
@@ -95,6 +106,10 @@ def check_backtester_import():
     """Check if backtester package can be imported."""
     print("\n🔧 Checking backtester package import...")
     
+    # Add project root to Python path
+    project_root = Path(__file__).parent.parent
+    sys.path.insert(0, str(project_root))
+    
     try:
         import backtester
         print("✅ backtester package imported successfully")
@@ -104,6 +119,11 @@ def check_backtester_import():
         from backtester.analytics import AnalyticsEngine
         from backtester.visualization import VisualizationEngine
         print("✅ Main components imported successfully")
+        
+        # Check stock database
+        from stock_database.config import get_config_manager
+        from stock_database.database_factory import DatabaseManager
+        print("✅ Stock database components imported successfully")
         
         return True
     except ImportError as e:
@@ -116,6 +136,10 @@ def run_quick_test():
     print("\n🧪 Running quick functionality test...")
     
     try:
+        # Add project root to Python path
+        project_root = Path(__file__).parent.parent
+        sys.path.insert(0, str(project_root))
+        
         from backtester.models import MarketData, OrderType, OrderAction
         from datetime import datetime
         
@@ -136,10 +160,56 @@ def run_quick_test():
         analytics = AnalyticsEngine()
         print("✅ AnalyticsEngine initialization test passed")
         
+        # Test database config
+        from stock_database.config import get_config_manager
+        config_manager = get_config_manager()
+        print("✅ Database config test passed")
+        
         return True
     except Exception as e:
         print(f"❌ Quick test failed: {e}")
+        import traceback
+        traceback.print_exc()
         return False
+
+
+def check_data_files():
+    """Check if required data files exist."""
+    print("\n📊 Checking data files...")
+    
+    project_root = Path(__file__).parent.parent
+    
+    data_files = [
+        'pricedata/BITFLYER_BTCJPY_1D_c51ab.csv',
+        'config.yaml',
+    ]
+    
+    optional_files = [
+        'data/stock_data.db',
+    ]
+    
+    all_present = True
+    
+    print("Required files:")
+    for file_path in data_files:
+        full_path = project_root / file_path
+        if full_path.exists():
+            size = full_path.stat().st_size
+            print(f"✅ {file_path} ({size:,} bytes)")
+        else:
+            print(f"❌ {file_path} - Missing")
+            all_present = False
+    
+    print("\nOptional files:")
+    for file_path in optional_files:
+        full_path = project_root / file_path
+        if full_path.exists():
+            size = full_path.stat().st_size
+            print(f"✅ {file_path} ({size:,} bytes)")
+        else:
+            print(f"ℹ️  {file_path} - Not present (will be created when needed)")
+    
+    return all_present
 
 
 def main():
@@ -152,6 +222,7 @@ def main():
         ("Virtual Environment", check_virtual_environment),
         ("Required Packages", check_required_packages),
         ("Project Structure", check_project_structure),
+        ("Data Files", check_data_files),
         ("Package Import", check_backtester_import),
         ("Quick Test", run_quick_test),
     ]
@@ -175,10 +246,16 @@ def main():
     if all_passed:
         print("🎉 All checks passed! Your environment is ready.")
         print("\n💡 You can now run:")
-        print("   python example_usage.py")
+        print("   python examples/example_backtester_usage.py")
+        print("   streamlit run examples/example_dashboard_advanced_stock_dashboard.py")
     else:
         print("⚠️  Some checks failed. Please fix the issues above.")
         print("\n💡 To install missing packages:")
+        print("   pip install -r requirements.txt")
+        print("\n💡 To set up the environment:")
+        print("   python -m venv venv")
+        print("   venv\\Scripts\\activate  # Windows")
+        print("   source venv/bin/activate  # Linux/Mac")
         print("   pip install -r requirements.txt")
     
     return 0 if all_passed else 1

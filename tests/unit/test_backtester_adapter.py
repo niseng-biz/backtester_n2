@@ -15,28 +15,7 @@ from stock_database.models.stock_data import StockData
 class TestBacktesterDataAdapter:
     """Test cases for BacktesterDataAdapter."""
     
-    @pytest.fixture
-    def mock_db_manager(self):
-        """Create a mock database manager."""
-        return Mock()
-    
-    @pytest.fixture
-    def sample_stock_data(self):
-        """Create sample stock data for testing."""
-        base_date = datetime(2024, 1, 1)
-        return [
-            StockData(
-                symbol="AAPL",
-                date=base_date + timedelta(days=i),
-                open=150.0 + i,
-                high=155.0 + i,
-                low=149.0 + i,
-                close=154.0 + i,
-                volume=1000000 + i * 1000,
-                adjusted_close=154.0 + i
-            )
-            for i in range(5)
-        ]
+
     
     @pytest.fixture
     def adapter(self, mock_db_manager):
@@ -62,20 +41,20 @@ class TestBacktesterDataAdapter:
     
     def test_initialization_without_db_manager(self):
         """Test adapter initialization without providing db_manager."""
-        with patch('stock_database.adapters.backtester_adapter.MongoDBManager') as mock_mongo:
+        with patch('stock_database.adapters.backtester_adapter.SQLiteManager') as mock_sqlite:
             with patch('stock_database.adapters.backtester_adapter.DataAccessAPI'):
                 adapter = BacktesterDataAdapter()
                 mock_mongo.assert_called_once()
     
-    def test_convert_to_market_data(self, adapter, sample_stock_data):
+    def test_convert_to_market_data(self, adapter, sample_stock_data_list):
         """Test conversion from StockData to MarketData."""
-        market_data = adapter.convert_to_market_data(sample_stock_data)
+        market_data = adapter.convert_to_market_data(sample_stock_data_list)
         
         assert len(market_data) == 5
         assert adapter._conversion_count == 5
         
         for i, market_item in enumerate(market_data):
-            stock_item = sample_stock_data[i]
+            stock_item = sample_stock_data_list[i]
             assert isinstance(market_item, MarketData)
             assert market_item.timestamp == stock_item.date
             assert market_item.open == stock_item.open
@@ -110,9 +89,9 @@ class TestBacktesterDataAdapter:
             market_data = adapter.convert_to_market_data(invalid_stock_data)
             assert len(market_data) == 0
     
-    def test_get_market_data_success(self, adapter, sample_stock_data):
+    def test_get_market_data_success(self, adapter, sample_stock_data_list):
         """Test successful market data retrieval."""
-        adapter.data_api.get_stock_data = Mock(return_value=sample_stock_data)
+        adapter.data_api.get_stock_data = Mock(return_value=sample_stock_data_list)
         
         result = adapter.get_market_data("AAPL")
         
@@ -129,13 +108,13 @@ class TestBacktesterDataAdapter:
         for i in range(len(result) - 1):
             assert result[i].timestamp <= result[i + 1].timestamp
     
-    def test_get_market_data_with_parameters(self, adapter, sample_stock_data):
+    def test_get_market_data_with_parameters(self, adapter, sample_stock_data_list):
         """Test market data retrieval with date parameters."""
         start_date = datetime(2024, 1, 1)
         end_date = datetime(2024, 1, 5)
         limit = 10
         
-        adapter.data_api.get_stock_data = Mock(return_value=sample_stock_data)
+        adapter.data_api.get_stock_data = Mock(return_value=sample_stock_data_list)
         
         result = adapter.get_market_data("AAPL", start_date, end_date, limit)
         
@@ -163,12 +142,12 @@ class TestBacktesterDataAdapter:
         assert result == []
         assert adapter._query_count == 1
     
-    def test_get_market_data_range_valid(self, adapter, sample_stock_data):
+    def test_get_market_data_range_valid(self, adapter, sample_stock_data_list):
         """Test market data range retrieval with valid dates."""
         start_date = datetime(2024, 1, 1)
         end_date = datetime(2024, 1, 5)
         
-        adapter.data_api.get_stock_data = Mock(return_value=sample_stock_data)
+        adapter.data_api.get_stock_data = Mock(return_value=sample_stock_data_list)
         
         result = adapter.get_market_data_range("AAPL", start_date, end_date)
         
@@ -183,22 +162,22 @@ class TestBacktesterDataAdapter:
         with pytest.raises(ValueError, match="Start date must be before or equal to end date"):
             adapter.get_market_data_range("AAPL", start_date, end_date)
     
-    def test_get_market_data_range_large_dataset(self, adapter, sample_stock_data):
+    def test_get_market_data_range_large_dataset(self, adapter, sample_stock_data_list):
         """Test market data range retrieval for large dataset using streaming."""
         start_date = datetime(2024, 1, 1)
         end_date = datetime(2024, 12, 31)  # Large range
         
         adapter.batch_size = 10  # Small batch size to trigger streaming
-        adapter.data_api.get_stock_data = Mock(return_value=sample_stock_data)
+        adapter.data_api.get_stock_data = Mock(return_value=sample_stock_data_list)
         
-        with patch.object(adapter, '_get_market_data_streaming', return_value=sample_stock_data) as mock_streaming:
+        with patch.object(adapter, '_get_market_data_streaming', return_value=sample_stock_data_list) as mock_streaming:
             result = adapter.get_market_data_range("AAPL", start_date, end_date)
             mock_streaming.assert_called_once_with("AAPL", start_date, end_date)
     
-    def test_get_multiple_symbols_data(self, adapter, sample_stock_data):
+    def test_get_multiple_symbols_data(self, adapter, sample_stock_data_list):
         """Test retrieval of data for multiple symbols."""
         symbols = ["AAPL", "GOOGL", "MSFT"]
-        adapter.data_api.get_stock_data = Mock(return_value=sample_stock_data)
+        adapter.data_api.get_stock_data = Mock(return_value=sample_stock_data_list)
         
         result = adapter.get_multiple_symbols_data(symbols)
         
@@ -207,14 +186,14 @@ class TestBacktesterDataAdapter:
         assert all(len(result[symbol]) == 5 for symbol in symbols)
         assert adapter.data_api.get_stock_data.call_count == 3
     
-    def test_get_multiple_symbols_data_with_error(self, adapter, sample_stock_data):
+    def test_get_multiple_symbols_data_with_error(self, adapter, sample_stock_data_list):
         """Test multiple symbols data retrieval with one symbol failing."""
         symbols = ["AAPL", "INVALID", "MSFT"]
         
         def mock_get_stock_data(symbol, **kwargs):
             if symbol == "INVALID":
                 raise Exception("Invalid symbol")
-            return sample_stock_data
+            return sample_stock_data_list
         
         adapter.data_api.get_stock_data = Mock(side_effect=mock_get_stock_data)
         
@@ -225,9 +204,9 @@ class TestBacktesterDataAdapter:
         assert len(result["INVALID"]) == 0  # Empty due to error
         assert len(result["MSFT"]) == 5
     
-    def test_get_latest_market_data(self, adapter, sample_stock_data):
+    def test_get_latest_market_data(self, adapter, sample_stock_data_list):
         """Test retrieval of latest market data."""
-        adapter.data_api.get_recent_stock_data = Mock(return_value=sample_stock_data[:2])
+        adapter.data_api.get_recent_stock_data = Mock(return_value=sample_stock_data_list[:2])
         
         result = adapter.get_latest_market_data("AAPL", days=2)
         
@@ -276,9 +255,9 @@ class TestBacktesterDataAdapter:
         assert result["data_points"] == 0
         assert "No data available for symbol" in result["warnings"]
     
-    def test_get_data_statistics(self, adapter, sample_stock_data):
+    def test_get_data_statistics(self, adapter, sample_stock_data_list):
         """Test data statistics retrieval."""
-        adapter.data_api.get_recent_stock_data = Mock(return_value=sample_stock_data)
+        adapter.data_api.get_recent_stock_data = Mock(return_value=sample_stock_data_list)
         
         result = adapter.get_data_statistics("AAPL")
         
@@ -289,7 +268,7 @@ class TestBacktesterDataAdapter:
         assert "volatility" in result
         
         # Check price statistics
-        prices = [data.close for data in sample_stock_data]
+        prices = [data.close for data in sample_stock_data_list]
         assert result["price_statistics"]["min"] == min(prices)
         assert result["price_statistics"]["max"] == max(prices)
         assert result["price_statistics"]["current"] == prices[0]
@@ -304,7 +283,7 @@ class TestBacktesterDataAdapter:
         assert "error" in result
         assert result["error"] == "No data available"
     
-    def test_optimize_for_backtesting(self, adapter, sample_stock_data):
+    def test_optimize_for_backtesting(self, adapter, sample_stock_data_list):
         """Test backtesting optimization."""
         start_date = datetime(2024, 1, 1)
         end_date = datetime(2024, 1, 5)
@@ -407,13 +386,13 @@ class TestBacktesterDataAdapter:
         assert result["test_conversion"] is False
         assert "No symbols available for testing" in result["errors"]
     
-    def test_streaming_data_retrieval(self, adapter, sample_stock_data):
+    def test_streaming_data_retrieval(self, adapter, sample_stock_data_list):
         """Test streaming data retrieval for large datasets."""
         start_date = datetime(2024, 1, 1)
         end_date = datetime(2024, 1, 10)
         
         adapter.batch_size = 100
-        adapter.data_api.get_stock_data = Mock(return_value=sample_stock_data)
+        adapter.data_api.get_stock_data = Mock(return_value=sample_stock_data_list)
         
         result = adapter._get_market_data_streaming("AAPL", start_date, end_date)
         

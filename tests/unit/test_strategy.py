@@ -135,21 +135,17 @@ class TestBaseStrategy:
 class TestBuyAndHoldStrategy:
     """Test cases for BuyAndHoldStrategy."""
     
-    def test_buy_and_hold_initialization(self):
+    def test_buy_and_hold_initialization(self, stock_lot_config):
         """Test buy and hold strategy initialization."""
-        from backtester.models import LotConfig
-        lot_config = LotConfig(asset_type="stock", min_lot_size=0.01, lot_step=0.01)
-        strategy = BuyAndHoldStrategy(50000.0, lot_config=lot_config)
+        strategy = BuyAndHoldStrategy(50000.0, lot_config=stock_lot_config)
         
         assert strategy.initial_capital == 50000.0
         assert strategy.get_strategy_name() == "Buy and Hold"
         assert strategy.has_bought is False
     
-    def test_buy_and_hold_first_signal(self):
+    def test_buy_and_hold_first_signal(self, stock_lot_config):
         """Test first buy signal generation."""
-        from backtester.models import LotConfig
-        lot_config = LotConfig(asset_type="stock", min_lot_size=0.01, lot_step=0.01)
-        strategy = BuyAndHoldStrategy(lot_config=lot_config)
+        strategy = BuyAndHoldStrategy(lot_config=stock_lot_config)
         
         current_data = MarketData(datetime.now(), 100.0, 105.0, 95.0, 102.0, 1000)
         historical_data = []
@@ -159,14 +155,12 @@ class TestBuyAndHoldStrategy:
         assert order is not None
         assert order.action == OrderAction.BUY
         assert order.order_type == OrderType.MARKET
-        assert order.quantity == 980  # floor(100000 / 102)
+        assert order.quantity == 1.0  # 1 LOT with FIXED lot size mode
         assert strategy.has_bought is True
     
-    def test_buy_and_hold_no_second_signal(self):
+    def test_buy_and_hold_no_second_signal(self, stock_lot_config):
         """Test no signal after first buy."""
-        from backtester.models import LotConfig
-        lot_config = LotConfig(asset_type="stock", min_lot_size=0.01, lot_step=0.01)
-        strategy = BuyAndHoldStrategy(lot_config=lot_config)
+        strategy = BuyAndHoldStrategy(lot_config=stock_lot_config)
         
         current_data = MarketData(datetime.now(), 100.0, 105.0, 95.0, 102.0, 1000)
         historical_data = []

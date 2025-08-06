@@ -3,7 +3,7 @@ Cryptocurrency data reader for handling unix timestamp data.
 """
 
 from datetime import datetime
-from .data_reader import CSVDataReader
+from .data_reader import CSVDataReader, handle_validation_error
 
 
 class CryptoDataReader(CSVDataReader):
@@ -20,15 +20,20 @@ class CryptoDataReader(CSVDataReader):
             volume_column="Volume",
         )
 
+    @handle_validation_error
     def _parse_date(self, timestamp_str) -> datetime:
         """
         Parse unix timestamp to datetime object.
+        Specialized for Unix timestamps only.
 
         Args:
             timestamp_str: Unix timestamp as string or number
 
         Returns:
             datetime object
+            
+        Raises:
+            DataValidationError: If timestamp cannot be parsed
         """
         try:
             # Convert to integer (unix timestamp)
